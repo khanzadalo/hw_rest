@@ -50,3 +50,12 @@ def review_detail_view(request, id):
         review_id = models.Review.objects.get(id=id)
     except models.Review.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND, data={"message": "Review does not exist"})
+
+
+@api_view(['GET'])
+def movies_reviews_view(request):
+    movie_reviews = models.Movie.objects.all()
+    data = serializer.MovieSerializer(movie_reviews, many=True).data
+    return Response(data=data)
+
+

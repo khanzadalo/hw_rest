@@ -1,0 +1,12 @@
+venv/
+*/migrations/0*.py
+*.secret
+*.log
+.idea/
+__pycache__/
+*.session
+db.sqlite3
+.coverage
+build/
+pip-cache/
+.env
