@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models import Avg
 
 
 class Director(models.Model):
@@ -29,12 +30,7 @@ class Movie(models.Model):
 
     @property
     def rating(self):
-        reviews_count = self.reviews.count()
-        sum = self.reviews.aggregate(sum('stars'))['stars__sum']
-        try:
-            return round(sum / reviews_count, 1)
-        except:
-            return 0
+        return Review.objects.filter(movie=self).aggregate(Avg('stars'))
 
 
 class Review(models.Model):

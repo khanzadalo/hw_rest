@@ -4,7 +4,6 @@ from . import models
 
 class DirectorSerializer(serializers.ModelSerializer):
     movies_count = serializers.SerializerMethodField()
-
     class Meta:
         model = models.Director
         fields = 'id name movies_count'.split()
@@ -22,16 +21,14 @@ class ReviewSerializer(serializers.ModelSerializer):
 class MovieSerializer(serializers.ModelSerializer):
     reviews = serializers.SerializerMethodField()
     director = serializers.SerializerMethodField()
-    rating = serializers.SerializerMethodField()
 
     class Meta:
         model = models.Movie
-        fields = 'id title duration director reviews count_reviews all_reviews rating'.split()
-
+        fields = 'id title duration director description reviews count_reviews all_reviews rating'.split()
 
     def get_director(self, movie):
         try:
-            return movie.director.name
+            return f'{movie.director.name} - {movie.director.id}'
         except AttributeError:
             return "No Director"
 
@@ -40,8 +37,5 @@ class MovieSerializer(serializers.ModelSerializer):
                                                                    movie=movie), many=True)
         return serializer.data
 
-    def get_rating(self, obj):
-        reviews = models.Review.objects.filter(movie=obj)
-        return sum(review.stars for review in reviews) / reviews.count() if reviews else 0
 
 
