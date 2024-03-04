@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models import Avg
+from users.models import MyUser
 
 
 class Director(models.Model):
@@ -34,6 +35,7 @@ class Movie(models.Model):
 
 
 class Review(models.Model):
+    user = models.ForeignKey(MyUser, on_delete=models.CASCADE, null=True)
     text = models.TextField()
     author = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     movie = models.ForeignKey(Movie, on_delete=models.CASCADE, null=True, related_name='reviews')

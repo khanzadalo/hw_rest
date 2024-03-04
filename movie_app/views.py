@@ -107,6 +107,10 @@ def review_list_view(request):
         data = serializer.ReviewSerializer(review, many=True).data
         return Response(data=data)
     elif request.method == 'POST':
+        user = request.user
+        if not user.email_confirmed:
+            return Response('Email not confirmed')
+
         serializers = serializer.ReviewValidateSerializer(data=request.data)
         if not serializers.is_valid():
             return Response(data={'errors': serializers.errors},
