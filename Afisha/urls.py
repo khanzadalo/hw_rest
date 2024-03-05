@@ -1,6 +1,6 @@
-from movie_app import views
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+from movie_app import views
 from users import views as user_views
 
 urlpatterns = [
@@ -12,7 +12,12 @@ urlpatterns = [
     path('api/v1/reviews/', views.review_list_view),
     path('api/v1/reviews/<int:id>/', views.review_detail_view),
     path('api/v1/movies/reviews/', views.movies_reviews_view),
-    path('api/v1/register/', user_views.registration_view),
-    path('api/v1/login/', user_views.login_view),
-    path('api/v1/user/reviews', user_views.user_reviews),
+    path('api/v1/users/registration/', user_views.registration_api_view),
+    path('api/v1/users/confirm/', user_views.confirm_user_api_view),
+    path('api/v1/users/login/', user_views.login_api_view),
+    path('api/v1/users/logout/', user_views.logout),
+
+
+
+
 ]

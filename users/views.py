@@ -1,47 +1,82 @@
-from django.contrib.auth.models import User
+import random
+
+from django.core.mail import send_mail
 from rest_framework import status
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import authenticate, login
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from movie_app import models, serializer
-from users.serializers import UserValidateSerializer, UserLoginSerializer
-from django.contrib.auth import authenticate
-from rest_framework.authtoken.models import Token
-from rest_framework.permissions import IsAuthenticated
+
+from Afisha import settings
+from .models import UserConfirmation
+from .serializers import UserRegisterSerializer, UserLoginSerializer, UserConfirmationSerializer
 
 
 @api_view(['POST'])
-def registration_view(request):
+def registration_api_view(request):
     if request.method == 'POST':
-        serializer = UserValidateSerializer(data=request.data)
+        serializer = UserRegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        User.objects.create_user(**serializer.validated_data)
-        return Response(data={'message': 'User created successfully'},
-                        status=status.HTTP_201_CREATED)
+        user = serializer.save()
+
+        # Генерируем и сохраняем код подтверждения в базе данных
+        code = ''.join([str(random.randint(0, 9)) for _ in range(5)])
+        confirmation = UserConfirmation.objects.create(user=user, code=code)
+        confirmation.save()
+
+        # Отправляем код подтверждения на почту
+        subject = 'Код для подтверждения'
+        message = f'Ваш код подтверждения: {code}'
+        sender = settings.EMAIL_HOST_USER
+        recipient_list = [user.email]
+        send_mail(subject, message, sender, recipient_list)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 @api_view(['POST'])
-def login_view(request):
-    if request.method == 'POST':
-        serializer = UserLoginSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = authenticate(**serializer.validated_data)
-        if user:
-            Token.objects.filter(user=user).delete()
-            # try:
-            #     token = Token.objects.get(user=user)
-            # except Token.DoesNotExist:
+def confirm_user_api_view(request):
+    serializer = UserConfirmationSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    code = serializer.validated_data.get('code')
 
-            token = Token.objects.create(user=user)
-            return Response(data={'key': token.key}, status=status.HTTP_200_OK)
+    # Проверяем, существует ли код подтверждения в базе данных
+    try:
+        confirmation = UserConfirmation.objects.get(code=code)
+    except UserConfirmation.DoesNotExist:
+        return Response({'error': 'Invalid confirmation code'}, status=status.HTTP_404_NOT_FOUND)
 
-        return Response(data={'error': 'User not Found'},
-                        status=status.HTTP_404_NOT_FOUND)
+    # Активируем пользователя, если код совпадает
+    user = confirmation.user
+    user.is_active = True
+    user.save()
+    confirmation.delete()  # Удаляем код подтверждения после использования
+
+    return Response({'status': 'User activated'}, status=status.HTTP_200_OK)
 
 
+@api_view(['POST'])
+def login_api_view(request):
+    serializer = UserLoginSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    user = authenticate(**serializer.validated_data)
+    if user:
+        login(request, user)
+        token, created = Token.objects.get_or_create(user=user)
+        user.save()
+        return Response({'token': token.key})
+    return Response({'error': 'Invalid credentials'}, status=400)
+
+
+@api_view(['POST'])
 @permission_classes([IsAuthenticated])
-@api_view(['GET'])
-def user_reviews(request):
-    reviews = models.Review.objects.filter(author=request.user)
-    serializers = serializer.ReviewSerializer(reviews, many=True)
-    return Response(data=serializers.data)
+def logout(request):
+    try:
+        token = Token.objects.get(user=request.user)
+        token.delete()
+        return Response({'message': 'User logged out'}, status=status.HTTP_200_OK)
+    except Token.DoesNotExist:
+        return Response({'message': 'User is already logged out'}, status=status.HTTP_200_OK)
+
