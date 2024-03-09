@@ -1,14 +1,17 @@
 from rest_framework import serializers
 from .models import User, UserConfirmation
+from rest_framework.exceptions import ValidationError
 
 
-class UserRegisterSerializer(serializers.ModelSerializer):
+class UserRegisterSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField()
     email = serializers.EmailField(max_length=255)
 
-    class Meta:
-        model = User
-        fields = ['id', 'email', 'password']
-        extra_kwargs = {'password': {'write_only': True}}
+    def validate_username(self, username):
+        if User.objects.filter(username=username).exists():
+            raise ValidationError("Username already exists")
+        return username
 
 
 class UserLoginSerializer(serializers.Serializer):
