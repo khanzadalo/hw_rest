@@ -54,6 +54,7 @@ class DirectorsListApiView(ListCreateAPIView):
 class DirectorDetailApiView(RetrieveUpdateDestroyAPIView):
     queryset = models.Director.objects.all()
     serializer_class = serializers.DirectorSerializer
+    lookup_field = 'id'
 
 
     def get(self, request, *args, **kwargs):
@@ -85,14 +86,9 @@ class ReviewListApiView(ListCreateAPIView):
 
 
 class ReviewDetailApiView(RetrieveUpdateDestroyAPIView):
-    queryset = Review.objects.all()
-    serializer_class = ReviewSerializer
-    lookup_field = 'id'
-
-
-class ReviewDetailView(RetrieveUpdateDestroyAPIView):
     queryset = models.Review.objects.all()
     serializer_class = serializers.ReviewSerializer
+    lookup_field = 'id'
 
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
